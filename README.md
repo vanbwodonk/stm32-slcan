@@ -32,6 +32,10 @@ using SWD interface with st-flash or serial loader stm32-flash (works only with 
 #define GPIO_USART1_TX                  GPIO9           /* PA9 */
 #define GPIO_USART1_RX                  GPIO10          /* PA10 */
 ```
+Flashing with stlink & openocd
+```
+openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg -c init -c "reset halt" -c "flash write_image erase stm32-slcan.bin 0x08000000" -c "reset" -c shutdown
+```
 
 Usage
 -----
