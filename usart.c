@@ -22,7 +22,7 @@
 #include <libopencm3/stm32/dma.h>
 
 #define BUFFER_SIZE 2048
-#define USART2_SPEED 2000000
+#define USART1_SPEED 2000000
 
 #define RING_SIZE(RING) ((RING)->size - 1)
 #define RING_DATA(RING) (RING)->data
@@ -93,30 +93,30 @@ void usart_setup(void)
     ring_init(&output_ring, output_ring_buffer, BUFFER_SIZE);
     ring_init(&input_ring, input_ring_buffer, BUFFER_SIZE);
 
-    /* Enable the USART2 interrupt. */
-    nvic_enable_irq(NVIC_USART2_IRQ);
+    /* Enable the USART1 interrupt. */
+    nvic_enable_irq(NVIC_USART1_IRQ);
 
-    /* Setup GPIO pin GPIO_USART2_TX on GPIO port A for transmit. */
+    /* Setup GPIO pin GPIO_USART1_TX on GPIO port A for transmit. */
     gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
-        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART2_TX);
+        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART1_TX);
 
-    /* Setup GPIO pin GPIO_USART2_RX on GPIO port A for receive. */
-    gpio_set_mode(GPIOA, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT, GPIO_USART2_RX);
+    /* Setup GPIO pin GPIO_USART1_RX on GPIO port A for receive. */
+    gpio_set_mode(GPIOA, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT, GPIO_USART1_RX);
 
     /* Setup UART parameters. */
-    usart_set_baudrate(USART2, USART2_SPEED);
-    usart_set_databits(USART2, 8);
-    usart_set_stopbits(USART2, USART_STOPBITS_1);
-    usart_set_parity(USART2, USART_PARITY_NONE);
+    usart_set_baudrate(USART1, USART1_SPEED);
+    usart_set_databits(USART1, 8);
+    usart_set_stopbits(USART1, USART_STOPBITS_1);
+    usart_set_parity(USART1, USART_PARITY_NONE);
     /* TODO use hardware handshaking */
-    usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
-    usart_set_mode(USART2, USART_MODE_TX_RX);
+    usart_set_flow_control(USART1, USART_FLOWCONTROL_NONE);
+    usart_set_mode(USART1, USART_MODE_TX_RX);
 
-    /* Enable USART2 Receive interrupt. */
-    USART_CR1(USART2) |= USART_CR1_RXNEIE;
+    /* Enable USART1 Receive interrupt. */
+    USART_CR1(USART1) |= USART_CR1_RXNEIE;
 
     /* Finally enable the USART. */
-    usart_enable(USART2);
+    usart_enable(USART1);
 
     dma_read();
 }
@@ -126,7 +126,7 @@ volatile uint32_t dma_last_rx_poll = 0;
 
 void dma_rx_poll(void)
 {
-    uint32_t n = sizeof(dma_rx_buf) - dma_get_number_of_data(DMA1, DMA_CHANNEL6);
+    uint32_t n = sizeof(dma_rx_buf) - dma_get_number_of_data(DMA1, DMA_CHANNEL5);
     int to_read = (n - dma_last_rx_poll);
     if (to_read < 0) {
         for (unsigned int i = dma_last_rx_poll; i < sizeof(dma_rx_buf); i++) {
@@ -146,31 +146,31 @@ void dma_rx_poll(void)
 static void dma_read()
 {
     /* Reset DMA channel*/
-    dma_channel_reset(DMA1, DMA_CHANNEL6);
+    dma_channel_reset(DMA1, DMA_CHANNEL5);
 
-    dma_set_peripheral_address(DMA1, DMA_CHANNEL6, (uint32_t)&USART2_DR);
-    dma_set_memory_address(DMA1, DMA_CHANNEL6, (uint32_t)dma_rx_buf);
-    dma_set_number_of_data(DMA1, DMA_CHANNEL6, sizeof(dma_rx_buf));
-    dma_set_read_from_peripheral(DMA1, DMA_CHANNEL6);
-    dma_enable_memory_increment_mode(DMA1, DMA_CHANNEL6);
-    dma_enable_circular_mode(DMA1, DMA_CHANNEL6);
-    dma_set_peripheral_size(DMA1, DMA_CHANNEL6, DMA_CCR_PSIZE_8BIT);
-    dma_set_memory_size(DMA1, DMA_CHANNEL6, DMA_CCR_MSIZE_8BIT);
-    dma_set_priority(DMA1, DMA_CHANNEL6, DMA_CCR_PL_HIGH);
+    dma_set_peripheral_address(DMA1, DMA_CHANNEL5, (uint32_t)&USART1_DR);
+    dma_set_memory_address(DMA1, DMA_CHANNEL5, (uint32_t)dma_rx_buf);
+    dma_set_number_of_data(DMA1, DMA_CHANNEL5, sizeof(dma_rx_buf));
+    dma_set_read_from_peripheral(DMA1, DMA_CHANNEL5);
+    dma_enable_memory_increment_mode(DMA1, DMA_CHANNEL5);
+    dma_enable_circular_mode(DMA1, DMA_CHANNEL5);
+    dma_set_peripheral_size(DMA1, DMA_CHANNEL5, DMA_CCR_PSIZE_8BIT);
+    dma_set_memory_size(DMA1, DMA_CHANNEL5, DMA_CCR_MSIZE_8BIT);
+    dma_set_priority(DMA1, DMA_CHANNEL5, DMA_CCR_PL_HIGH);
 
-    //dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL6);
+    //dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL5);
 
-    dma_enable_channel(DMA1, DMA_CHANNEL6);
+    dma_enable_channel(DMA1, DMA_CHANNEL5);
 
-    usart_enable_rx_dma(USART2);
+    usart_enable_rx_dma(USART1);
 }
 
-void usart2_isr(void)
+void usart1_isr(void)
 {
     uint8_t c;
 
-    volatile uint32_t sr = USART_SR(USART2);
-    volatile uint32_t cr1 = USART_CR1(USART2);
+    volatile uint32_t sr = USART_SR(USART1);
+    volatile uint32_t cr1 = USART_CR1(USART1);
 
     /* Check if we were called because of TXE. */
     if (((sr & USART_SR_TXE) != 0)) {
@@ -181,10 +181,10 @@ void usart2_isr(void)
 
         if (data == -1) {
             /* Disable the TXE interrupt, it's no longer needed. */
-            USART_CR1(USART2) &= ~USART_CR1_TXEIE;
+            USART_CR1(USART1) &= ~USART_CR1_TXEIE;
         } else {
             /* Put data into the transmit register. */
-            usart_send(USART2, data);
+            usart_send(USART1, data);
         }
     }
 }
@@ -197,7 +197,7 @@ int _write(int file, char* ptr, int len)
         ret = ring_write(&output_ring, (uint8_t*)ptr, len);
         if (ret < 0)
             ret = -ret;
-        USART_CR1(USART2) |= USART_CR1_TXEIE;
+        USART_CR1(USART1) |= USART_CR1_TXEIE;
         return ret;
     }
     errno = EIO;

@@ -74,9 +74,9 @@ static void gpio_setup(void)
     gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL,
         GPIO15);
 
-    /* Enable clocks for GPIO port A (for GPIO_USART2_TX) and USART2. */
+    /* Enable clocks for GPIO port A (for GPIO_USART1_TX) and USART1. */
     rcc_periph_clock_enable(RCC_AFIO);
-    rcc_periph_clock_enable(RCC_USART2);
+    rcc_periph_clock_enable(RCC_USART1);
     rcc_periph_clock_enable(RCC_DMA1);
 }
 
@@ -317,7 +317,7 @@ void usb_lp_can_rx0_isr(void)
     can_fifo_release(CAN1, 0);
 
     /* enable the transmitter now */
-    USART_CR1(USART2) |= USART_CR1_TXEIE;
+    USART_CR1(USART1) |= USART_CR1_TXEIE;
 }
 
 static uint32_t get_nibbles(int nibbles)
@@ -469,7 +469,7 @@ int main(void)
             ring_write_ch(&output_ring, '\a');
         }
         /* enable the transmitter now */
-        USART_CR1(USART2) |= USART_CR1_TXEIE;
+        USART_CR1(USART1) |= USART_CR1_TXEIE;
     }
     return 0;
 }
